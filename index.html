@@ -5,283 +5,323 @@
 <title>Durham Athletic FC – Career Hub</title>
 
 <!-- =========================
-     ESTILOS (IDENTIDAD CLUB)
+     CONFIGURACIÓN APP / PWA
+========================= -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1f3a">
+
+<!-- =========================
+     ESTILOS GENERALES
 ========================= -->
 <style>
-:root{
-  --primary:#0b2545;
-  --accent:#7a1e2c;
-  --bg:#f4f6f8;
+body {
+  font-family: Arial, sans-serif;
+  background: #0b1f3a;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
 }
-body{font-family:Arial;background:var(--bg);margin:20px;}
-h1,h2,h3{color:var(--primary);}
-table{width:100%;border-collapse:collapse;background:#fff;margin-bottom:25px;}
-th,td{border:1px solid #ccc;padding:6px;text-align:center;}
-th{background:var(--primary);color:white;}
-input,select{width:100%;border:none;text-align:center;}
-button{padding:8px 14px;margin:4px 0;background:var(--primary);color:white;border:none;cursor:pointer;}
-.secondary{background:var(--accent);}
-.section{margin-bottom:45px;}
-@media print{
-  button,select{display:none;}
-  body{background:white;}
+
+h1, h2 {
+  color: #f5c542;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 4px;
+  border: none;
+  cursor: pointer;
+  background: #f5c542;
+  color: #000;
+  font-weight: bold;
+}
+
+button.secondary {
+  background: #999;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  background: #fff;
+  color: #000;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.legend {
+  padding: 6px;
+  cursor: help;
+}
+
+.level-3 { color: gold; font-weight: bold; }
+.level-2 { color: silver; }
+.level-1 { color: #cd7f32; }
+
+.legend small {
+  display: block;
+  font-size: 0.8em;
+  opacity: 0.7;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Durham Athletic FC</h1>
-<p>Career Hub · FC 26</p>
+<h1>🦅 Durham Athletic FC – Career Hub</h1>
 
 <!-- =========================
-     1. ESTADÍSTICAS POR TEMPORADA
+     TABLA DE ESTADÍSTICAS
 ========================= -->
-<div class="section">
 <h2>📊 Estadísticas por Temporada</h2>
-<button onclick="addRow('stats')">➕ Añadir fila</button>
-<button onclick="duplicateSeason()">📋 Duplicar plantilla para nueva temporada</button>
 
-<datalist id="playersList"></datalist>
+<button onclick="addRow()">➕ Añadir fila</button>
+<button onclick="saveData()">💾 Guardar todo</button>
+<button class="secondary" onclick="resetData()">🗑️ Resetear datos</button>
 
 <table id="stats">
 <tr>
-<th>Temporada</th>
-<th>Jugador</th>
-<th>Posición</th>
-<th>PJ</th>
-<th>Goles</th>
-<th>Asistencias</th>
-<th>Porterías Imbatidas</th>
-<th>Media FC 26</th>
-<th>Valor (£M)</th>
+  <th>Temporada</th>
+  <th>Jugador</th>
+  <th>Pos</th>
+  <th>PJ</th>
+  <th>Goles</th>
+  <th>Asist.</th>
+  <th>CS</th>
+  <th>Media</th>
 </tr>
 </table>
-</div>
+
+<datalist id="playersList"></datalist>
 
 <!-- =========================
-     2. PALMARÉS
+     RANKINGS
 ========================= -->
-<div class="section">
-<h2>🏆 Palmarés</h2>
-<button onclick="addRow('honours')">➕ Añadir</button>
-<table id="honours">
-<tr><th>Temporada</th><th>Competición</th><th>Título</th></tr>
-</table>
-</div>
+<h2>🏆 Rankings Históricos (TOP 10)</h2>
 
-<!-- =========================
-     3. TRASPASOS Y CESIONES
-========================= -->
-<div class="section">
-<h2>🔁 Traspasos y Cesiones</h2>
-<button onclick="addRow('transfers')">➕ Añadir</button>
-<table id="transfers">
-<tr>
-<th>Temporada</th>
-<th>Jugador</th>
-<th>Movimiento</th>
-<th>Tipo</th>
-<th>Club</th>
-<th>Precio (£M)</th>
-</tr>
-</table>
-</div>
-
-<!-- =========================
-     4. RESUMEN / PDF
-========================= -->
-<div class="section">
-<h2>📄 Informe del Club</h2>
-<select id="seasonFilter"></select>
-<button onclick="buildReport()">Generar informe</button>
-<button onclick="window.print()">📄 Exportar PDF</button>
-<div id="report"></div>
-</div>
-
-<!-- =========================
-     5. RANKINGS
-========================= -->
-<div class="section">
-<h2>🥇 Rankings Históricos (Top 10)</h2>
+<h3>⚽ Máximos Goleadores</h3>
 <table id="rankGoals"></table>
+
+<h3>🎯 Máximos Asistentes</h3>
 <table id="rankAssists"></table>
+
+<h3>🧤 Porterías Imbatidas</h3>
 <table id="rankCS"></table>
-</div>
 
 <!-- =========================
-     6. RÉCORDS DEL CLUB
+     HALL OF FAME
 ========================= -->
-<div class="section">
-<h2>📈 Récords del Club</h2>
-<table id="records"></table>
-</div>
-
-<!-- =========================
-     7. HALL OF FAME
-========================= -->
-<div class="section">
-<h2>🏛️ Salón de la Fama</h2>
-<table id="hall"></table>
-</div>
-
-<button class="secondary" onclick="resetData()">🗑️ Resetear todos los datos</button>
-<button class="secondary" onclick="saveData()">💾 Guardar todo</button>
+<h2>🏛️ Hall of Fame</h2>
+<ul id="hallOfFame"></ul>
 
 <!-- =========================
      JAVASCRIPT
 ========================= -->
 <script>
-
-let activeSeason=null;
-
-// =========================
-// UTILIDAD: AÑADIR FILA
-// =========================
-function addRow(id){
-  const t=document.getElementById(id);
-  const r=t.insertRow();
-  for(let i=0;i<t.rows[0].cells.length;i++){
-    r.insertCell().innerHTML="<input>";
+/**************************************************
+ * CONFIGURACIÓN DEL HALL OF FAME (TOCAR AQUÍ)
+ **************************************************/
+const HOF_RULES = {
+  fieldPlayers: {
+    goals: 200,
+    assists: 100,
+    seasons: 5
+  },
+  goalkeepers: {
+    cleanSheets: 150,
+    seasons: 5
   }
+};
+
+/**************************************************
+ * VARIABLES GLOBALES
+ **************************************************/
+const stats = document.getElementById("stats");
+const playersList = document.getElementById("playersList");
+
+/**************************************************
+ * AÑADIR FILA
+ **************************************************/
+function addRow(){
+  const r = stats.insertRow();
+  for(let i=0;i<8;i++) r.insertCell();
+
+  r.cells[0].innerHTML = `<input>`;
+  r.cells[1].innerHTML = `<input list="playersList">`;
+  r.cells[2].innerHTML = `<input placeholder="POR / DC / MC...">`;
+  for(let i=3;i<8;i++) r.cells[i].innerHTML = `<input type="number" value="0">`;
 }
 
-// =========================
-// DUPLICAR PLANTILLA
-// =========================
-function duplicateSeason(){
-  const newSeason=prompt("Nueva temporada (ej: 2027/28)");
-  if(!newSeason||!activeSeason) return;
-
-  [...stats.rows].slice(1).forEach(r=>{
-    if(r.cells[0].firstChild.value!==activeSeason) return;
-    const nr=stats.insertRow();
-    for(let i=0;i<9;i++) nr.insertCell().innerHTML="<input>";
-    nr.cells[0].firstChild.value=newSeason;
-    nr.cells[1].firstChild.value=r.cells[1].firstChild.value;
-    nr.cells[2].firstChild.value=r.cells[2].firstChild.value;
-  });
-
-  activeSeason=newSeason;
-  localStorage.activeSeason=activeSeason;
-}
-
-// =========================
-// GUARDAR Y CALCULAR
-// =========================
+/**************************************************
+ * GUARDAR Y RECALCULAR TODO
+ **************************************************/
 function saveData(){
-  let players={},seasons=new Set(),hall={},records={
-    goals:{v:0},assists:{v:0},cs:{v:0},
-    buy:{v:0},sell:{v:0}
-  };
-
-  [...stats.rows].slice(1).forEach(r=>{
-    const [s,n,pos,,g,a,cs]=[...r.cells].map(c=>c.firstChild.value.trim().toUpperCase());
-    if(!s||!n) return;
-    seasons.add(s);
-    if(!players[n]) players[n]={g:0,a:0,cs:0};
-    players[n].g+=+g||0;
-    players[n].a+=+a||0;
-    if(pos==="POR") players[n].cs+=+cs||0;
-    if(+g>records.goals.v) records.goals={v:+g,j:n,s};
-    if(+a>records.assists.v) records.assists={v:+a,j:n,s};
-    if(pos==="POR" && +cs>records.cs.v) records.cs={v:+cs,j:n,s};
-    if(pos!=="POR" && players[n].g>=50) hall[n]="Leyenda ofensiva";
-    if(pos==="POR" && players[n].cs>=50) hall[n]="Leyenda bajo palos";
-  });
-
-  [...transfers.rows].slice(1).forEach(r=>{
-    const mov=r.cells[2].firstChild.value.toUpperCase();
-    const price=+r.cells[5].firstChild.value||0;
-    const name=r.cells[1].firstChild.value;
-    const s=r.cells[0].firstChild.value;
-    if(mov==="ENTRANTE" && price>records.buy.v) records.buy={v:price,j:name,s};
-    if(mov==="SALIENTE" && price>records.sell.v) records.sell={v:price,j:name,s};
-  });
-
-  localStorage.stats=stats.innerHTML;
-  localStorage.transfers=transfers.innerHTML;
-  localStorage.activeSeason=[...seasons].slice(-1)[0];
-
-  buildRank(rankGoals,players,"g","Goles");
-  buildRank(rankAssists,players,"a","Asistencias");
-  buildRank(rankCS,players,"cs","Porterías imbatidas");
-  buildRecords(records);
-  buildHall(hall);
-  buildSeasons(seasons);
+  localStorage.stats = stats.innerHTML;
+  recalc();
 }
 
-// =========================
-// RANKINGS
-// =========================
-function buildRank(t,data,key,title){
-  t.innerHTML=`<tr><th colspan="3">Top 10 – ${title}</th></tr>
-<tr><th>#</th><th>Jugador</th><th>Total</th></tr>`;
-  Object.entries(data).sort((a,b)=>b[1][key]-a[1][key]).slice(0,10)
-    .forEach((e,i)=>t.innerHTML+=`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1][key]}</td></tr>`);
-}
-
-// =========================
-// RÉCORDS
-// =========================
-function buildRecords(r){
-  records.innerHTML=`
-<tr><th>Récord</th><th>Jugador</th><th>Valor</th><th>Temporada</th></tr>
-<tr><td>Más goles</td><td>${r.goals.j}</td><td>${r.goals.v}</td><td>${r.goals.s}</td></tr>
-<tr><td>Más asistencias</td><td>${r.assists.j}</td><td>${r.assists.v}</td><td>${r.assists.s}</td></tr>
-<tr><td>Más porterías imbatidas</td><td>${r.cs.j}</td><td>${r.cs.v}</td><td>${r.cs.s}</td></tr>
-<tr><td>Fichaje más caro</td><td>${r.buy.j}</td><td>${r.buy.v} M£</td><td>${r.buy.s}</td></tr>
-<tr><td>Venta más cara</td><td>${r.sell.j}</td><td>${r.sell.v} M£</td><td>${r.sell.s}</td></tr>`;
-}
-
-// =========================
-// HALL OF FAME
-// =========================
-function buildHall(h){
-  hall.innerHTML="<tr><th>Jugador</th><th>Motivo</th></tr>";
-  Object.entries(h).forEach(e=>hall.innerHTML+=`<tr><td>${e[0]}</td><td>${e[1]}</td></tr>`);
-}
-
-// =========================
-// TEMPORADAS
-// =========================
-function buildSeasons(s){
-  seasonFilter.innerHTML="";
-  [...s].forEach(x=>seasonFilter.innerHTML+=`<option>${x}</option>`);
-}
-
-// =========================
-// INFORME COMPLETO
-// =========================
-function buildReport(){
-  report.innerHTML=
-    `<h3>Informe oficial del club</h3>`+
-    rankGoals.outerHTML+
-    rankAssists.outerHTML+
-    rankCS.outerHTML+
-    records.outerHTML+
-    hall.outerHTML+
-    honours.outerHTML+
-    transfers.outerHTML;
-}
-
-// =========================
-// RESET
-// =========================
+/**************************************************
+ * RESET TOTAL
+ **************************************************/
 function resetData(){
-  if(confirm("Esto borrará TODOS los datos. ¿Seguro?")){
+  if(confirm("⚠️ Se borrarán todos los datos. ¿Seguro?")){
     localStorage.clear();
     location.reload();
   }
 }
 
-// =========================
-// CARGA DATOS
-// =========================
-if(localStorage.stats) stats.innerHTML=localStorage.stats;
-if(localStorage.transfers) transfers.innerHTML=localStorage.transfers;
-if(localStorage.activeSeason) activeSeason=localStorage.activeSeason;
+/**************************************************
+ * RECÁLCULO GENERAL
+ **************************************************/
+function recalc(){
+  const players = {};
+  playersList.innerHTML = "";
 
+  [...stats.rows].slice(1).forEach(r=>{
+    const season = r.cells[0].firstChild.value;
+    const name = r.cells[1].firstChild.value;
+    const pos = r.cells[2].firstChild.value;
+    const pj = +r.cells[3].firstChild.value;
+    const g = +r.cells[4].firstChild.value;
+    const a = +r.cells[5].firstChild.value;
+    const cs = +r.cells[6].firstChild.value;
+
+    if(!name) return;
+
+    if(!players[name]){
+      players[name] = { pos, g:0, a:0, cs:0, seasons:new Set() };
+      playersList.innerHTML += `<option value="${name}">`;
+    }
+
+    players[name].g += g;
+    players[name].a += a;
+    if(pos === "POR") players[name].cs += cs;
+    players[name].seasons.add(season);
+  });
+
+  Object.values(players).forEach(p=>p.seasons = p.seasons.size);
+
+  buildTop("rankGoals", players, "g", "Goles");
+  buildTop("rankAssists", players, "a", "Asistencias");
+  buildTop("rankCS", players, "cs", "Porterías Imbatidas");
+
+  updateHallOfFame(players);
+}
+
+/**************************************************
+ * RANKINGS TOP 10
+ **************************************************/
+function buildTop(id, players, key, label){
+  const t = document.getElementById(id);
+  t.innerHTML = `<tr><th>#</th><th>Jugador</th><th>${label}</th></tr>`;
+
+  Object.entries(players)
+    .filter(p=>p[1][key]>0)
+    .sort((a,b)=>b[1][key]-a[1][key])
+    .slice(0,10)
+    .forEach((p,i)=>{
+      t.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td>${p[0]}</td>
+        <td>${p[1][key]}</td>
+      </tr>`;
+    });
+}
+
+/**************************************************
+ * HALL OF FAME – LÓGICA AVANZADA
+ **************************************************/
+function qualifiesForHOF(p){
+  if(p.pos === "POR"){
+    return p.cs >= HOF_RULES.goalkeepers.cleanSheets ||
+           p.seasons >= HOF_RULES.goalkeepers.seasons;
+  } else {
+    return p.g >= HOF_RULES.fieldPlayers.goals ||
+           p.a >= HOF_RULES.fieldPlayers.assists ||
+           p.seasons >= HOF_RULES.fieldPlayers.seasons;
+  }
+}
+
+function legendLevel(p){
+  let score = 0;
+  if(p.pos === "POR"){
+    if(p.cs >= HOF_RULES.goalkeepers.cleanSheets) score++;
+    if(p.seasons >= HOF_RULES.goalkeepers.seasons) score++;
+  } else {
+    if(p.g >= HOF_RULES.fieldPlayers.goals) score++;
+    if(p.a >= HOF_RULES.fieldPlayers.assists) score++;
+    if(p.seasons >= HOF_RULES.fieldPlayers.seasons) score++;
+  }
+  return score >= 3 ? 3 : score === 2 ? 2 : 1;
+}
+
+function hofReason(p){
+  let r = [];
+  if(p.pos === "POR"){
+    if(p.cs >= HOF_RULES.goalkeepers.cleanSheets) r.push(`${p.cs} CS`);
+    if(p.seasons >= HOF_RULES.goalkeepers.seasons) r.push(`${p.seasons} temporadas`);
+  } else {
+    if(p.g >= HOF_RULES.fieldPlayers.goals) r.push(`${p.g} goles`);
+    if(p.a >= HOF_RULES.fieldPlayers.assists) r.push(`${p.a} asistencias`);
+    if(p.seasons >= HOF_RULES.fieldPlayers.seasons) r.push(`${p.seasons} temporadas`);
+  }
+  return r.join(" · ");
+}
+
+function getHOFDate(name){
+  const d = JSON.parse(localStorage.hofDates || "{}");
+  if(!d[name]){
+    d[name] = new Date().toLocaleDateString();
+    localStorage.hofDates = JSON.stringify(d);
+  }
+  return d[name];
+}
+
+function updateHallOfFame(players){
+  const hof = document.getElementById("hallOfFame");
+  hof.innerHTML = "";
+
+  let legends = [];
+
+  Object.entries(players).forEach(([name,p])=>{
+    if(!qualifiesForHOF(p)) return;
+    legends.push({
+      name,
+      level: legendLevel(p),
+      reason: hofReason(p),
+      date: getHOFDate(name)
+    });
+  });
+
+  legends.sort((a,b)=>b.level - a.level);
+
+  legends.forEach(l=>{
+    hof.innerHTML += `
+      <li class="legend level-${l.level}" title="${l.reason}">
+        ⭐ ${l.name}
+        <small>${l.date}</small>
+      </li>`;
+  });
+}
+
+/**************************************************
+ * CARGA INICIAL
+ **************************************************/
+if(localStorage.stats){
+  stats.innerHTML = localStorage.stats;
+  recalc();
+}
 </script>
+
 </body>
 </html>
