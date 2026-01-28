@@ -34,6 +34,7 @@ small{opacity:.7}
 <button onclick="closeSeason()">🔒 Finalizar temporada</button>
 <button onclick="exportPDF()">📄 Exportar PDF</button>
 <button onclick="resetDB()">🗑️ Reset</button>
+<div id="saveStatus" style="opacity:.7;margin:6px 0;"></div>
 
 <h2>📊 Estadísticas</h2>
 <button onclick="addStat()">➕ Añadir jugador</button>
@@ -107,7 +108,7 @@ const HOF={
 };
 
 /* ====================== UTIL ====================== */
-function saveDB(){ localStorage.DB = JSON.stringify(DB); alert("Guardado ✔️"); }
+function saveDB(){localStorage.DB = JSON.stringify(DB);showSaved();}
 function resetDB(){ if(confirm("¿Borrar todo?")){localStorage.clear();location.reload();} }
 
 /* ====================== STATS ====================== */
@@ -232,7 +233,7 @@ function recalc(){
  buildRanks(P);
  buildCharts(P);
  buildHOF(P,titles);
- saveDB();
+ autosave();
 }
 
 /* ====================== RECORDS / RANKINGS ====================== */
@@ -352,6 +353,20 @@ render();
 
 if ("serviceWorker" in navigator) {
  navigator.serviceWorker.register("./sw.js");
+}
+
+let saveTimeout;
+function showSaved(){
+ clearTimeout(saveTimeout);
+ const el = document.getElementById("saveStatus");
+ el.textContent = "💾 Guardado";
+ saveTimeout = setTimeout(()=>el.textContent="",1500);
+}
+
+let autosaveTimer;
+function autosave(){
+ clearTimeout(autosaveTimer);
+ autosaveTimer = setTimeout(saveDB, 500);
 }
 
 </script>
