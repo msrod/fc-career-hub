@@ -5,17 +5,20 @@
 <title>Durham Athletic FC – Career Hub</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f5c542">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
 <style>
 body{font-family:Arial;background:#0b1f3a;color:#fff;padding:20px}
-h1,h2,h3{color:#f5c542}
-button{padding:8px;margin:4px;font-weight:bold}
+h1,h2{color:#f5c542}
+button{padding:8px 12px;margin:4px;font-weight:bold}
 table{width:100%;border-collapse:collapse;background:#fff;color:#000;margin-bottom:20px}
 th,td{border:1px solid #ccc;padding:6px;text-align:center}
 input,select{width:100%}
-.legend{cursor:help}
-.level-3{color:gold;font-weight:bold}
-.level-2{color:silver}
-.level-1{color:#cd7f32}
+.locked{opacity:.6}
+canvas{background:#fff;padding:10px;margin-bottom:20px}
 small{opacity:.7}
 </style>
 </head>
@@ -24,15 +27,18 @@ small{opacity:.7}
 
 <h1>🦅 Durham Athletic FC – Career Hub</h1>
 
-<!-- =======================
-     ESTADÍSTICAS JUGADORES
-======================= -->
-<h2>📊 Estadísticas por Temporada</h2>
-<button onclick="addStatRow()">➕ Añadir fila</button>
-<button onclick="saveAll()">💾 Guardar todo</button>
-<button onclick="resetAll()">🗑️ Reset</button>
+<button onclick="saveDB()">💾 Guardar</button>
+<button onclick="backupDB()">📦 Backup</button>
+<input type="file" onchange="restoreDB(event)">
+<button onclick="duplicateSeason()">📋 Nueva temporada</button>
+<button onclick="closeSeason()">🔒 Finalizar temporada</button>
+<button onclick="exportPDF()">📄 Exportar PDF</button>
+<button onclick="resetDB()">🗑️ Reset</button>
 
-<table id="stats">
+<h2>📊 Estadísticas</h2>
+<button onclick="addStat()">➕ Añadir jugador</button>
+
+<table id="statsTable">
 <tr>
 <th>Temp</th><th>Jugador</th><th>Pos</th>
 <th>PJ</th><th>G</th><th>A</th><th>CS</th>
@@ -40,177 +46,315 @@ small{opacity:.7}
 </tr>
 </table>
 
-<datalist id="playersList"></datalist>
-
-<!-- =======================
-     TRASPASOS / CESIONES
-======================= -->
-<h2>🔁 Traspasos y Cesiones</h2>
-<button onclick="addTransferRow()">➕ Añadir movimiento</button>
-
-<table id="transfers">
+<h2>🔁 Traspasos</h2>
+<button onclick="addTransfer()">➕ Añadir</button>
+<table id="transfersTable">
 <tr>
-<th>Temp</th><th>Jugador</th>
-<th>Dirección</th><th>Tipo</th>
-<th>Club</th><th>Precio (£M)</th>
+<th>Temp</th><th>Jugador</th><th>Dir</th><th>Tipo</th><th>Club</th><th>Precio</th>
 </tr>
 </table>
 
-<!-- =======================
-     RÉCORDS DEL CLUB
-======================= -->
+<h2>🏆 Palmarés</h2>
+<button onclick="addTrophy()">➕ Añadir</button>
+<table id="trophiesTable">
+<tr>
+<th>Temp</th><th>Competición</th><th>Resultado</th><th>Jugadores</th>
+</tr>
+</table>
+
+<h2>⭐ Jugador de la Temporada</h2>
+<button onclick="addAward()">➕ Añadir</button>
+<table id="awardsTable">
+<tr><th>Temp</th><th>Jugador</th><th>Motivo</th></tr>
+</table>
+
 <h2>📈 Récords del Club</h2>
 <ul id="records"></ul>
 
-<!-- =======================
-     RANKINGS
-======================= -->
 <h2>🏆 Rankings Históricos (TOP 10)</h2>
-<table id="rankGoals"></table>
-<table id="rankAssists"></table>
+<table id="rankG"></table>
+<table id="rankA"></table>
 <table id="rankCS"></table>
+<table id="rankPJ"></table>
 
-<!-- =======================
-     HALL OF FAME
-======================= -->
+<h2>📊 Economía</h2>
+<select id="chartPlayer" onchange="drawPlayerChart()"></select>
+<canvas id="playerChart" height="120"></canvas>
+<canvas id="clubChart" height="120"></canvas>
+
 <h2>🏛️ Hall of Fame</h2>
-<ul id="hallOfFame"></ul>
+<ul id="hof"></ul>
 
 <script>
-/* ======================
-   CONFIG HALL OF FAME
-====================== */
-const HOF_RULES={
- field:{goals:120,assists:80,seasons:5},
- gk:{cs:70,seasons:5}
+
+/* ====================== BASE DE DATOS ====================== */
+let DB = JSON.parse(localStorage.DB || JSON.stringify({
+ stats:[],
+ transfers:[],
+ trophies:[],
+ awards:[],
+ closedSeasons:{},
+ hofDates:{}
+}));
+
+const playerChartCanvas = document.getElementById("playerChart");
+const clubChartCanvas = document.getElementById("clubChart");
+
+/* ====================== CONFIG HOF ====================== */
+const HOF={
+ field:{g:120,a:80,pj:200,t:5},
+ gk:{cs:70,pj:180,t:5}
 };
 
-const stats=document.getElementById("stats");
-const transfers=document.getElementById("transfers");
+/* ====================== UTIL ====================== */
+function saveDB(){ localStorage.DB = JSON.stringify(DB); alert("Guardado ✔️"); }
+function resetDB(){ if(confirm("¿Borrar todo?")){localStorage.clear();location.reload();} }
 
-/* ======================
-   AÑADIR FILAS
-====================== */
-function addStatRow(){
- let r=stats.insertRow();
- for(let i=0;i<9;i++)r.insertCell();
- r.cells[0].innerHTML="<input>";
- r.cells[1].innerHTML="<input list='playersList'>";
- r.cells[2].innerHTML="<input placeholder='POR / DC / MC'>";
- for(let i=3;i<9;i++)r.cells[i].innerHTML="<input type='number' value='0'>";
+/* ====================== STATS ====================== */
+function addStat(data={}){
+ DB.stats.push(Object.assign({
+  season:"",name:"",pos:"",
+  pj:0,g:0,a:0,cs:0,media:0,value:0
+ },data));
+ render();
 }
 
-function addTransferRow(){
- let r=transfers.insertRow();
- for(let i=0;i<6;i++)r.insertCell();
- r.cells[0].innerHTML="<input>";
- r.cells[1].innerHTML="<input list='playersList'>";
- r.cells[2].innerHTML="<select><option>Entrante</option><option>Saliente</option></select>";
- r.cells[3].innerHTML="<select><option>Traspaso</option><option>Cesión</option></select>";
- r.cells[4].innerHTML="<input>";
- r.cells[5].innerHTML="<input type='number' value='0'>";
+function renderStats(){
+ statsTable.innerHTML=statsTable.rows[0].outerHTML;
+ DB.stats.forEach((s,i)=>{
+  let r=statsTable.insertRow();
+  Object.values(s).forEach((v,j)=>{
+   let c=r.insertCell();
+   c.innerHTML=`<input value="${v}" ${DB.closedSeasons[s.season]?"readonly":""}
+    oninput="DB.stats[${i}]['${Object.keys(s)[j]}']=this.value; recalc()">`;
+  });
+  if(DB.closedSeasons[s.season]) r.classList.add("locked");
+ });
 }
 
-/* ======================
-   GUARDAR / RESET
-====================== */
-function saveAll(){
- localStorage.stats=stats.innerHTML;
- localStorage.transfers=transfers.innerHTML;
- recalcAll();
+/* ====================== TRANSFERS ====================== */
+function addTransfer(){
+ DB.transfers.push({season:"",name:"",dir:"Entrante",type:"Traspaso",club:"",price:0});
+ render();
 }
 
-function resetAll(){
- if(confirm("¿Borrar todo?")){
-  localStorage.clear();
-  location.reload();
- }
+function renderTransfers(){
+ transfersTable.innerHTML=transfersTable.rows[0].outerHTML;
+ DB.transfers.forEach((t,i)=>{
+  let r=transfersTable.insertRow();
+  r.innerHTML=`
+   <td><input value="${t.season}" oninput="DB.transfers[${i}].season=this.value; recalc()"></td>
+   <td><input value="${t.name}" oninput="DB.transfers[${i}].name=this.value; recalc()"></td>
+   <td><select onchange="DB.transfers[${i}].dir=this.value">
+    <option ${t.dir=="Entrante"?"selected":""}>Entrante</option>
+    <option ${t.dir=="Saliente"?"selected":""}>Saliente</option>
+   </select></td>
+   <td><select onchange="DB.transfers[${i}].type=this.value">
+    <option>Traspaso</option><option>Cesión</option>
+   </select></td>
+   <td><input value="${t.club}" oninput="DB.transfers[${i}].club=this.value"></td>
+   <td><input type="number" value="${t.price}" oninput="DB.transfers[${i}].price=this.value"></td>`;
+ });
 }
 
-/* ======================
-   RECÁLCULO GENERAL
-====================== */
-function recalcAll(){
- let players={},records=document.getElementById("records");
+/* ====================== TROPHIES ====================== */
+function addTrophy(){
+ DB.trophies.push({season:"",comp:"",res:"",players:""});
+ render();
+}
+
+function renderTrophies(){
+ trophiesTable.innerHTML=trophiesTable.rows[0].outerHTML;
+ DB.trophies.forEach((t,i)=>{
+  let r=trophiesTable.insertRow();
+  r.innerHTML=`
+   <td><input value="${t.season}" oninput="DB.trophies[${i}].season=this.value; recalc()"></td>
+   <td><input value="${t.comp}" oninput="DB.trophies[${i}].comp=this.value"></td>
+   <td><input value="${t.res}" oninput="DB.trophies[${i}].res=this.value"></td>
+   <td><input value="${t.players}" oninput="DB.trophies[${i}].players=this.value; recalc()"></td>`;
+ });
+}
+
+/* ====================== AWARDS ====================== */
+function addAward(){
+ DB.awards.push({season:"",name:"",reason:""});
+ render();
+}
+
+function renderAwards(){
+ awardsTable.innerHTML=awardsTable.rows[0].outerHTML;
+ DB.awards.forEach((a,i)=>{
+  let r=awardsTable.insertRow();
+  r.innerHTML=`
+   <td><input value="${a.season}" oninput="DB.awards[${i}].season=this.value"></td>
+   <td><input value="${a.name}" oninput="DB.awards[${i}].name=this.value"></td>
+   <td><input value="${a.reason}" oninput="DB.awards[${i}].reason=this.value"></td>`;
+ });
+}
+
+/* ====================== TEMPORADAS ====================== */
+function duplicateSeason(){
+ let seasons=[...new Set(DB.stats.map(s=>s.season))].filter(Boolean);
+ let last=seasons.sort().slice(-1)[0];
+ let next=prompt("Nueva temporada:", "");
+ if(!next) return;
+ DB.stats.filter(s=>s.season===last).forEach(s=>{
+  addStat({...s,season:next,pj:0,g:0,a:0,cs:0});
+ });
+}
+
+function closeSeason(){
+ let s=prompt("Temporada a cerrar:");
+ if(s){DB.closedSeasons[s]=true; saveDB(); render();}
+}
+
+/* ====================== RECÁLCULO ====================== */
+let clubChart,playerChart;
+
+function recalc(){
+ let P={},titles={};
+ DB.stats.forEach(s=>{
+  if(!P[s.name]) P[s.name]={pj:0,g:0,a:0,cs:0,val:0,pos:s.pos};
+  P[s.name].pj+=+s.pj;
+  P[s.name].g+=+s.g;
+  P[s.name].a+=+s.a;
+  if(s.pos==="POR") P[s.name].cs+=+s.cs;
+  P[s.name].val=Math.max(P[s.name].val,+s.value);
+ });
+
+ DB.trophies.forEach(t=>{
+  t.players.split(",").forEach(p=>{
+   if(p.trim()) titles[p.trim()]=(titles[p.trim()]||0)+1;
+  });
+ });
+
+ buildRecords(P,titles);
+ buildRanks(P);
+ buildCharts(P);
+ buildHOF(P,titles);
+ saveDB();
+}
+
+/* ====================== RECORDS / RANKINGS ====================== */
+function buildRecords(P,t){
  records.innerHTML="";
- let maxBuy=0,maxSell=0;
 
- // ESTADÍSTICAS
- [...stats.rows].slice(1).forEach(r=>{
-  let n=r.cells[1].firstChild.value;
-  if(!n)return;
-  let pos=r.cells[2].firstChild.value;
-  let g=+r.cells[4].firstChild.value;
-  let a=+r.cells[5].firstChild.value;
-  let cs=+r.cells[6].firstChild.value;
-  let val=+r.cells[8].firstChild.value;
-  let s=r.cells[0].firstChild.value;
-
-  if(!players[n])players[n]={pos,g:0,a:0,cs:0,seasons:new Set(),value:0};
-  players[n].g+=g;
-  players[n].a+=a;
-  if(pos==="POR")players[n].cs+=cs;
-  players[n].value=Math.max(players[n].value,val);
-  players[n].seasons.add(s);
+ // HISTÓRICOS
+ let maxHist = k => Object.entries(P).sort((a,b)=>b[1][k]-a[1][k])[0];
+ records.innerHTML += `<li><b>Récords históricos</b></li>`;
+ ["g","a","cs","pj"].forEach(k=>{
+  let m = maxHist(k);
+  if(m) records.innerHTML+=`<li>${k.toUpperCase()}: ${m[0]} (${m[1][k]})</li>`;
  });
 
- Object.values(players).forEach(p=>p.seasons=p.seasons.size);
+ // TEMPORADA
+ let seasonRecords = {
+  g:{v:0,n:"",s:""},
+  a:{v:0,n:"",s:""},
+  cs:{v:0,n:"",s:""}
+ };
 
- // TRASPASOS
- [...transfers.rows].slice(1).forEach(r=>{
-  let dir=r.cells[2].firstChild.value;
-  let price=+r.cells[5].firstChild.value;
-  if(dir==="Entrante")maxBuy=Math.max(maxBuy,price);
-  if(dir==="Saliente")maxSell=Math.max(maxSell,price);
+ DB.stats.forEach(s=>{
+  if(+s.g > seasonRecords.g.v){
+   seasonRecords.g = {v:+s.g,n:s.name,s:s.season};
+  }
+  if(+s.a > seasonRecords.a.v){
+   seasonRecords.a = {v:+s.a,n:s.name,s:s.season};
+  }
+  if(s.pos==="POR" && +s.cs > seasonRecords.cs.v){
+   seasonRecords.cs = {v:+s.cs,n:s.name,s:s.season};
+  }
  });
 
- records.innerHTML+=`<li>💰 Fichaje más caro: £${maxBuy}M</li>`;
- records.innerHTML+=`<li>💸 Venta más cara: £${maxSell}M</li>`;
-
- buildTop("rankGoals",players,"g","Goles");
- buildTop("rankAssists",players,"a","Asistencias");
- buildTop("rankCS",players,"cs","Porterías Imbatidas");
- updateHallOfFame(players);
+ records.innerHTML += `<li><b>Récords en una temporada</b></li>`;
+ records.innerHTML += `<li>⚽ Goles: ${seasonRecords.g.n} (${seasonRecords.g.v}) – ${seasonRecords.g.s}</li>`;
+ records.innerHTML += `<li>🎯 Asistencias: ${seasonRecords.a.n} (${seasonRecords.a.v}) – ${seasonRecords.a.s}</li>`;
+ records.innerHTML += `<li>🧤 Porterías imbatidas: ${seasonRecords.cs.n} (${seasonRecords.cs.v}) – ${seasonRecords.cs.s}</li>`;
 }
 
-/* ======================
-   RANKINGS
-====================== */
-function buildTop(id,p,k,l){
- let t=document.getElementById(id);
- t.innerHTML=`<tr><th>#</th><th>Jugador</th><th>${l}</th></tr>`;
- Object.entries(p).sort((a,b)=>b[1][k]-a[1][k]).slice(0,10)
- .forEach((e,i)=>{
-  if(e[1][k]>0)
-   t.innerHTML+=`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1][k]}</td></tr>`;
- });
+
+function buildRanks(P){
+ makeRank(rankG,P,"g","Goles");
+ makeRank(rankA,P,"a","Asistencias");
+ makeRank(rankCS,P,"cs","Porterías imbatidas");
+ makeRank(rankPJ,P,"pj","Partidos jugados");
 }
 
-/* ======================
-   HALL OF FAME
-====================== */
-function updateHallOfFame(p){
- let h=document.getElementById("hallOfFame");
- h.innerHTML="";
- Object.entries(p).forEach(([n,d])=>{
-  let ok=d.pos==="POR"
-   ? d.cs>=HOF_RULES.gk.cs||d.seasons>=HOF_RULES.gk.seasons
-   : d.g>=HOF_RULES.field.goals||d.a>=HOF_RULES.field.assists||d.seasons>=HOF_RULES.field.seasons;
-  if(!ok)return;
-  h.innerHTML+=`<li class="legend">⭐ ${n}</li>`;
+function makeRank(el,P,k,l){
+ el.innerHTML=`<tr><th>#</th><th>Jugador</th><th>${l}</th></tr>`;
+ Object.entries(P).sort((a,b)=>b[1][k]-a[1][k]).slice(0,10)
+ .forEach((e,i)=>el.innerHTML+=`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1][k]}</td></tr>`);
+}
+
+/* ====================== GRÁFICAS ====================== */
+function buildCharts(P){
+ chartPlayer.innerHTML="<option>Jugador</option>";
+ Object.keys(P).forEach(n=>chartPlayer.innerHTML+=`<option>${n}</option>`);
+ if(clubChart) clubChart.destroy();
+ clubChart=new Chart(clubChartCanvas,{
+  type:"bar",
+  data:{labels:Object.keys(P),datasets:[{label:"Valor máximo (£M)",data:Object.values(P).map(p=>p.val)}]}
  });
 }
 
-/* ======================
-   CARGA
-====================== */
-if(localStorage.stats){
- stats.innerHTML=localStorage.stats;
- transfers.innerHTML=localStorage.transfers||transfers.innerHTML;
- recalcAll();
+function drawPlayerChart(){
+ let n=chartPlayer.value;
+ let s=[],v=[];
+ DB.stats.filter(x=>x.name===n).forEach(x=>{s.push(x.season);v.push(x.value);});
+ if(playerChart) playerChart.destroy();
+ playerChart=new Chart(playerChartCanvas,{
+  type:"line",
+  data:{labels:s,datasets:[{label:n,data:v}]}
+ });
 }
+
+/* ====================== HALL OF FAME ====================== */
+function buildHOF(P,t){
+ hof.innerHTML="";
+ Object.entries(P).forEach(([n,d])=>{
+  let score=0;
+  if(d.pos==="POR"){
+   if(d.cs>=HOF.gk.cs) score++;
+   if(d.pj>=HOF.gk.pj) score++;
+   if((t[n]||0)>=HOF.gk.t) score++;
+  }else{
+   if(d.g>=HOF.field.g) score++;
+   if(d.a>=HOF.field.a) score++;
+   if(d.pj>=HOF.field.pj) score++;
+   if((t[n]||0)>=HOF.field.t) score++;
+  }
+  if(score>0){
+   if(!DB.hofDates[n]) DB.hofDates[n]=new Date().toLocaleDateString();
+   hof.innerHTML+=`<li>⭐ ${n}<small>Entrada: ${DB.hofDates[n]}</small></li>`;
+  }
+ });
+}
+
+/* ====================== PDF ====================== */
+function exportPDF(){
+ const pdf=new jspdf.jsPDF();
+ let y=10;
+ pdf.text("Durham Athletic FC – Historia del Club",10,y); y+=10;
+ document.querySelectorAll("#records li").forEach(li=>{pdf.text(li.innerText,10,y); y+=6;});
+ pdf.save("Durham_AFC_Resumen.pdf");
+}
+
+/* ====================== RENDER ====================== */
+function render(){
+ renderStats();
+ renderTransfers();
+ renderTrophies();
+ renderAwards();
+ recalc();
+}
+
+render();
+
+if ("serviceWorker" in navigator) {
+ navigator.serviceWorker.register("./sw.js");
+}
+
 </script>
 
 </body>
 </html>
-
