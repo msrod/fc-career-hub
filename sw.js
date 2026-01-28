@@ -1,4 +1,4 @@
-const CACHE = "durham-afc-v3";
+const CACHE = "durham-afc-v4";
 const FILES = [
  "./",
  "./index.html",
@@ -25,4 +25,5 @@ self.addEventListener("fetch", e => {
   caches.match(e.request).then(r => r || fetch(e.request))
  );
 });
+
 
