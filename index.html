@@ -89,6 +89,8 @@ small{opacity:.7}
 
 <script>
 
+let autosaveTimer;
+
 /* ====================== BASE DE DATOS ====================== */
 let DB = JSON.parse(localStorage.DB || JSON.stringify({
  stats:[],
@@ -417,7 +419,6 @@ function showSaved(){
  saveTimeout = setTimeout(()=>el.textContent="",1500);
 }
 
-let autosaveTimer;
 function autosave(){
  clearTimeout(autosaveTimer);
  autosaveTimer = setTimeout(saveDB, 500);
@@ -428,3 +429,4 @@ function autosave(){
 </body>
 
 </html>
+
