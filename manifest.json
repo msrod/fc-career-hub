@@ -1,7 +1,7 @@
 {
-  "name": "Durham Athletic FC – Career Hub",
-  "short_name": "Durham AFC",
-  "description": "Registro histórico y gestión del modo carrera de Durham Athletic FC",
+  "name": "Durham Athletic FC – Career Hub Pro",
+  "short_name": "Durham AFC Pro",
+  "description": "Gestión profesional y completa del modo carrera de Durham Athletic FC en FC 26 - Estadísticas, traspasos, trofeos y análisis avanzado",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b1f3a",
@@ -11,12 +11,16 @@
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["sports", "utilities"],
+  "lang": "es-ES"
 }
