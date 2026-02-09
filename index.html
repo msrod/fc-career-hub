@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Durham Athletic – Career Hub</title>
+<title>Durham Athletic FC – Career Hub Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/png" href="icon-192.png">
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5c542">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
 * {
@@ -393,8 +392,8 @@ small {
 <div class="container">
 
 <header>
-  <h1>🦅 Durham Athletic – Career Hub</h1>
-  <p>Gestión completa de modo carrera</p>
+  <h1>🦅 Durham Athletic FC – Career Hub Pro</h1>
+  <p>Gestión completa de tu modo carrera</p>
 </header>
 
 <div class="toolbar">
@@ -406,7 +405,6 @@ small {
   </div>
   <button class="btn-secondary" onclick="duplicateSeason()">📋 Nueva temporada</button>
   <button class="btn-secondary" onclick="closeSeason()">🔒 Finalizar temporada</button>
-  <button class="btn-info" onclick="exportPDF()">📄 Exportar PDF</button>
   <button class="btn-danger" onclick="resetDB()">🗑️ Reset</button>
 </div>
 
@@ -444,7 +442,15 @@ small {
 <!-- Traspasos -->
 <div class="section-card">
   <h2>🔄 Traspasos</h2>
-  <button class="btn-success" onclick="addTransfer()">➕ Añadir traspaso</button>
+  
+  <div class="filter-section">
+    <label>Filtrar por temporada:</label>
+    <select id="filterTransferSeason" onchange="renderTransfers()">
+      <option value="">Todas</option>
+    </select>
+    <button class="btn-success" onclick="addTransfer()">➕ Añadir traspaso</button>
+  </div>
+  
   <div style="overflow-x: auto; margin-top: 15px;">
     <table id="transfersTable">
       <tr>
@@ -715,8 +721,12 @@ function deleteTransfer(index){
 }
 
 function renderTransfers(){
+  const filter = document.getElementById("filterTransferSeason").value;
+  const filteredTransfers = filter ? DB.transfers.filter(t => t.season === filter) : DB.transfers;
+  
   transfersTable.innerHTML = transfersTable.rows[0].outerHTML;
-  DB.transfers.forEach((t,i) => {
+  filteredTransfers.forEach((t, originalIndex) => {
+    const i = DB.transfers.indexOf(t);
     let r = transfersTable.insertRow();
     r.innerHTML = `
       <td><input value="${t.season}" oninput="DB.transfers[${i}].season=this.value; recalc()"></td>
@@ -911,6 +921,7 @@ function recalc(){
   buildHOF(P, titles);
   buildTransferStats();
   updateSeasonFilter();
+  updateTransferSeasonFilter();
   autosave();
 }
 
@@ -947,9 +958,12 @@ function buildGeneralStats(){
 }
 
 function buildTransferStats(){
+  const filter = document.getElementById("filterTransferSeason").value;
+  const transfersToCalculate = filter ? DB.transfers.filter(t => t.season === filter) : DB.transfers;
+  
   let spent = 0, income = 0;
   
-  DB.transfers.forEach(t => {
+  transfersToCalculate.forEach(t => {
     const price = +t.price || 0;
     if(t.type === "Traspaso"){
       if(t.dir === "Entrante") spent += price;
@@ -964,6 +978,24 @@ function buildTransferStats(){
   document.getElementById("totalSpent").textContent = spent.toFixed(1);
   document.getElementById("totalIncome").textContent = income.toFixed(1);
   document.getElementById("totalTrophies").textContent = DB.trophies.length;
+}
+
+function updateTransferSeasonFilter(){
+  const seasons = [...new Set([
+    ...DB.stats.map(s=>s.season),
+    ...DB.transfers.map(t=>t.season)
+  ])].filter(Boolean).sort();
+  
+  const currentFilter = document.getElementById("filterTransferSeason").value;
+  
+  filterTransferSeason.innerHTML = '<option value="">Todas las temporadas</option>';
+  seasons.forEach(s => {
+    const option = document.createElement("option");
+    option.value = s;
+    option.textContent = s;
+    if(s === currentFilter) option.selected = true;
+    filterTransferSeason.appendChild(option);
+  });
 }
 
 /* ====================== RECORDS / RANKINGS ====================== */
@@ -1010,8 +1042,8 @@ function buildRecords(P, t){
 }
 
 function buildRanks(P){
-  makeRank(rankG, P, "g", "Goles");
-  makeRank(rankA, P, "a", "Asistencias");
+  makeRank(rankG, P, "g", "G");
+  makeRank(rankA, P, "a", "A");
   makeRank(rankCS, P, "cs", "PI");
   makeRank(rankPJ, P, "pj", "PJ");
 }
@@ -1260,63 +1292,6 @@ function buildHOF(P, t){
   if(hofMembers.length === 0){
     hof.innerHTML = "<li style='opacity:0.6;'>Aún no hay leyendas en el Hall of Fame</li>";
   }
-}
-
-/* ====================== PDF ====================== */
-function exportPDF(){
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
-  let y = 15;
-  
-  // Título
-  pdf.setFontSize(20);
-  pdf.setTextColor(245, 197, 66);
-  pdf.text("Durham Athletic FC", 105, y, { align: "center" });
-  y += 8;
-  pdf.setFontSize(14);
-  pdf.text("Informe Historico del Club", 105, y, { align: "center" });
-  y += 15;
-  
-  // Récords
-  pdf.setFontSize(12);
-  pdf.setTextColor(0, 0, 0);
-  pdf.text("RECORDS DEL CLUB", 10, y);
-  y += 7;
-  
-  pdf.setFontSize(10);
-  document.querySelectorAll("#records li").forEach(li => {
-    if(y > 270){
-      pdf.addPage();
-      y = 15;
-    }
-    const text = li.innerText.replace(/[^\x00-\x7F]/g, "");
-    pdf.text(text, 15, y);
-    y += 6;
-  });
-  
-  // Hall of Fame
-  y += 10;
-  if(y > 250){
-    pdf.addPage();
-    y = 15;
-  }
-  pdf.setFontSize(12);
-  pdf.text("HALL OF FAME", 10, y);
-  y += 7;
-  
-  pdf.setFontSize(10);
-  document.querySelectorAll("#hof li").forEach(li => {
-    if(y > 270){
-      pdf.addPage();
-      y = 15;
-    }
-    const text = li.innerText.replace(/[^\x00-\x7F]/g, "").substring(0, 80);
-    pdf.text(text, 15, y);
-    y += 6;
-  });
-  
-  pdf.save(`Durham_AFC_Informe_${new Date().toISOString().split('T')[0]}.pdf`);
-  showMessage("✅ PDF exportado correctamente", "success");
 }
 
 /* ====================== UI HELPERS ====================== */
